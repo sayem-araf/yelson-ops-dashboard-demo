@@ -1,37 +1,105 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Yelson Ops Dashboard
 
-## Getting Started
+A responsive operations analytics dashboard built with Next.js and TypeScript to demonstrate how logistics and operations teams can monitor KPIs, identify bottlenecks, and track operational performance from a single interface.
 
-First, run the development server:
+> This is a portfolio demonstration using synthetic data. It is not connected to a live production system.
+
+## Live Demo
+
+https://yelson-ops-dashboard-vercel.vercel.app
+
+## Overview
+
+Yelson Ops simulates an operational monitoring environment for logistics or high-volume service teams.
+
+The dashboard is designed to make key operational information easier to understand without relying on fragmented spreadsheets or multiple reporting tools.
+
+## Key Features
+
+- Operational KPI overview
+- Interactive charts and visualizations
+- Responsive dashboard layout
+- Filtering and metric exploration
+- Shipment / operations monitoring views
+- Real-time-style telemetry simulation
+- Clean desktop and mobile experience
+
+## Business Use Case
+
+An operations team may need to monitor metrics such as:
+
+- order or shipment volume
+- delayed operations
+- SLA performance
+- operational exceptions
+- utilization
+- throughput
+- trend changes
+
+The dashboard demonstrates how these signals can be consolidated into one decision-support interface.
+
+## Tech Stack
+
+- Next.js
+- TypeScript
+- React
+- Tailwind CSS
+- Vercel
+- [Add your charting library]
+- [Add any other major libraries]
+
+## Data
+
+The current version uses synthetic demonstration data.
+
+The project could be extended to consume production data from:
+
+- PostgreSQL
+- REST APIs
+- ERP systems
+- logistics platforms
+- data warehouses
+- streaming/event sources
+
+## What I Built
+
+I designed and implemented:
+
+- dashboard structure and UI
+- KPI presentation
+- interactive visualizations
+- responsive behavior
+- TypeScript application logic
+- deployment through Vercel
+
+## Future Improvements
+
+Planned extensions include:
+
+- PostgreSQL or Supabase data layer
+- API-based data ingestion
+- SQL transformations
+- authentication
+- role-based views
+- operational alerts
+- scheduled data refresh
+- historical drill-down analysis
+
+## Screenshots
+
+Add 2–4 screenshots here.
+
+## Running Locally
 
 ```bash
+git clone <repository-url>
+cd <project-folder>
+npm install
 npm run dev
-# orgit push -f origin main
 
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Then open:
+http://localhost:3000
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Author
+Sayem Araf
+Data & Operations Analytics | Python | SQL | Automation | Dashboard Development
