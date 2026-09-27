@@ -6,7 +6,8 @@ First, run the development server:
 
 ```bash
 npm run dev
-# or
+# orgit push -f origin main
+
 yarn dev
 # or
 pnpm dev
