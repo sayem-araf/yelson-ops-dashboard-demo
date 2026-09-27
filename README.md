@@ -99,7 +99,8 @@ npm run dev
 
 Then open:
 http://localhost:3000
+```
 
-Author
-Sayem Araf
-Data & Operations Analytics | Python | SQL | Automation | Dashboard Development
+## Author
+### sayem Araf
+### Data & Operations Analytics | Python | SQL | Automation |Dashboard Development
