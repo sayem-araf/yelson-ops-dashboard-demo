@@ -110,7 +110,7 @@ export default function Dashboard() {
             { name: 'Margins', icon: DollarSign, active: false },
             { name: 'Settings', icon: Settings, active: false },
           ].map((item) => (
-            <button key={item.name} className={`flex items-center gap-3 w-full px-3 py-2 text-sm rounded-md transition-colors ${item.active ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'}`}>
+            <button key={item.name} disabled={!item.active} title={item.active ? "Current overview" : "Demo placeholder — not implemented"} aria-current={item.active ? "page" : undefined} className={`flex items-center gap-3 w-full px-3 py-2 text-sm rounded-md transition-colors ${item.active ? 'bg-slate-800 text-white' : 'text-slate-500 cursor-not-allowed'}`}>
               <item.icon size={18} />
               {item.name}
             </button>
@@ -119,16 +119,17 @@ export default function Dashboard() {
       </aside>
 
       {/* MAIN CONTENT */}
-      <main className="flex-1 flex flex-col overflow-y-auto">
+      <main className="min-w-0 flex-1 flex flex-col overflow-y-auto">
         
         {/* TOP BAR */}
         <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-6 border-b border-slate-800 gap-4">
           <div>
             <h2 className="text-2xl font-semibold">Operations Overview</h2>
+            <p className="mt-1 text-sm text-slate-400">Portfolio demo. Metrics and charts are independent synthetic examples.</p>
           </div>
           <div className="flex items-center gap-4">
             <span className="px-3 py-1 text-xs font-medium bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/20 rounded-full">
-              Demo, sample data
+              Demo · Synthetic data
             </span>
             <span className="text-sm text-slate-400 bg-slate-800/50 px-3 py-1.5 rounded-md border border-slate-700">
               Last 30 Days
@@ -159,8 +160,8 @@ export default function Dashboard() {
           </div>
 
           {/* CHARTS */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-80">
-            <div className="p-5 rounded-lg border border-slate-800 bg-[#0F1523] flex flex-col gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="h-80 min-w-0 p-5 rounded-lg border border-slate-800 bg-[#0F1523] flex flex-col gap-4">
               <h3 className="text-sm font-medium text-slate-300">Daily Revenue</h3>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData}>
@@ -173,7 +174,7 @@ export default function Dashboard() {
               </ResponsiveContainer>
             </div>
             
-            <div className="p-5 rounded-lg border border-slate-800 bg-[#0F1523] flex flex-col gap-4">
+            <div className="h-80 min-w-0 p-5 rounded-lg border border-slate-800 bg-[#0F1523] flex flex-col gap-4">
               <h3 className="text-sm font-medium text-slate-300">Orders by Category</h3>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={barData}>
@@ -194,7 +195,8 @@ export default function Dashboard() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                 <input 
                   type="text" 
-                  placeholder="Search by ID or Customer..." 
+                  placeholder="Search by ID or Customer..."
+                  aria-label="Search orders by ID or customer"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full bg-[#0B0F17] border border-slate-700 text-sm text-white rounded-md pl-9 pr-4 py-2 focus:outline-none focus:border-[#10B981] transition-colors"
