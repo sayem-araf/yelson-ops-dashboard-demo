@@ -6,7 +6,7 @@ A Next.js and TypeScript portfolio demo showing how an operations team can explo
 
 ## Live Demo
 
-[Explore Yelson Ops on Vercel(https://yelson-ops-dashboard-demo.vercel.app)
+[Explore Yelson Ops on Vercel (https://yelson-ops-dashboard-demo.vercel.app)
 
 ## What It Demonstrates
 
