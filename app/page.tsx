@@ -1,65 +1,52 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { 
-  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, 
+import {
+  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
 } from 'recharts';
-import { 
-  LayoutDashboard, ShoppingCart, Package, DollarSign, Settings, 
-  ArrowUpRight, ArrowDownRight, Download, Search, ChevronUp, ChevronDown 
+import {
+  LayoutDashboard, ShoppingCart, Package, DollarSign, Settings,
+  Download, Search, ChevronUp, ChevronDown
 } from 'lucide-react';
 
-// --- MOCK DATA ---
-const generateMockData = () => {
-  const categories = ["Electronics", "Office", "Apparel", "Industrial"];
-  const statuses = ["Delivered", "In Transit", "Processing"];
-  return Array.from({ length: 40 }, (_, i) => ({
-    id: `ORD-${1000 + i}`,
-    date: new Date(Date.now() - Math.floor(Math.random() * 30) * 86400000).toISOString().split('T')[0],
-    customer: `Company ${String.fromCharCode(65 + (i % 26))} Ltd.`,
-    category: categories[i % categories.length],
-    items: Math.floor(Math.random() * 50) + 1,
-    revenue: Math.floor(Math.random() * 5000) + 100,
-    margin: Math.floor(Math.random() * 40) + 10,
-    status: statuses[i % statuses.length],
-  }));
-};
-
-const tableData = generateMockData();
-const chartData = Array.from({ length: 30 }, (_, i) => ({ day: i + 1, revenue: 1000 + Math.random() * 2000 }));
-const barData = [
-  { name: 'Electronics', orders: 400 }, { name: 'Office', orders: 300 },
-  { name: 'Apparel', orders: 200 }, { name: 'Industrial', orders: 278 }
-];
+import { AS_OF, summarize, type Order } from '@/lib/orders';
 
 export default function Dashboard() {
-  const [isMounted, setIsMounted] = useState(false);
+  const [tableData, setTableData] = useState<Order[]>([]);
+  const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [attempt, setAttempt] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+  const [sortConfig, setSortConfig] = useState<{ key: keyof Order; direction: 'asc' | 'desc' } | null>(null);
 
-  // Fix Hydration Mismatch
   useEffect(() => {
-    setIsMounted(true);
-  }, []);
+    const controller = new AbortController();
+    fetch('/api/orders', { signal: controller.signal })
+      .then(response => { if (!response.ok) throw new Error('Request failed'); return response.json(); })
+      .then(data => { if (!Array.isArray(data.orders)) throw new Error('Invalid response'); setTableData(data.orders); setState('ready'); })
+      .catch(() => { if (!controller.signal.aborted) setState('error'); });
+    return () => controller.abort();
+  }, [attempt]);
 
   // --- FILTER & SORT LOGIC ---
   const filteredData = useMemo(() => {
-    let filterable = tableData.filter(row => 
-      row.customer.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    const filterable = tableData.filter(row =>
+      row.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
       row.id.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     if (sortConfig !== null) {
-      filterable.sort((a: any, b: any) => {
-        if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === 'asc' ? -1 : 1;
-        if (a[sortConfig.key] > b[sortConfig.key]) return sortConfig.direction === 'asc' ? 1 : -1;
+      filterable.sort((a, b) => {
+        if ((a[sortConfig.key] ?? '') < (b[sortConfig.key] ?? '')) return sortConfig.direction === 'asc' ? -1 : 1;
+        if ((a[sortConfig.key] ?? '') > (b[sortConfig.key] ?? '')) return sortConfig.direction === 'asc' ? 1 : -1;
         return 0;
       });
     }
     return filterable;
-  }, [searchTerm, sortConfig]);
+  }, [searchTerm, sortConfig, tableData]);
+  const metrics = useMemo(() => summarize(filteredData), [filteredData]);
+  const { chartData, barData } = metrics;
 
-  const requestSort = (key: string) => {
+  const requestSort = (key: keyof Order) => {
     let direction: 'asc' | 'desc' = 'asc';
     if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
       direction = 'desc';
@@ -69,11 +56,11 @@ export default function Dashboard() {
 
   // --- EXPORT LOGIC ---
   const exportCSV = () => {
-    const headers = ["Order ID", "Date", "Customer", "Category", "Items", "Revenue", "Margin %", "Status"];
+    const headers = ["Order ID", "Date", "Customer", "Category", "Items", "Order value EUR", "Order margin %", "Status", "Cost EUR", "Promised delivery", "Actual delivery"];
     const csvContent = [
       headers.join(","),
-      ...filteredData.map(row => 
-        [row.id, row.date, `"${row.customer}"`, row.category, row.items, row.revenue, row.margin, row.status].join(",")
+      ...filteredData.map(row =>
+        [row.id, row.date, `"${row.customer}"`, row.category, row.items, row.revenue, row.margin, row.status, row.cost, row.promisedDate, row.deliveredDate ?? ''].join(",")
       )
     ].join("\n");
 
@@ -86,14 +73,17 @@ export default function Dashboard() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   // Prevents rendering until the client is ready
-  if (!isMounted) return <div className="h-screen bg-[#0B0F17]"></div>;
+  if (state !== 'ready') return <main className="min-h-screen bg-[#0B0F17] text-white p-8">
+    {state === 'loading' ? <p role="status">Loading synthetic orders…</p> : <div role="alert"><p>Unable to load orders.</p><button className="mt-4 underline" onClick={() => { setState('loading'); setAttempt(n => n + 1); }}>Retry</button></div>}
+  </main>;
 
   return (
     <div className="flex h-screen bg-[#0B0F17] text-white font-sans overflow-hidden">
-      
+
       {/* SIDEBAR */}
       <aside className="w-64 border-r border-slate-800 bg-[#0B0F17] hidden md:flex flex-col">
         <div className="p-6">
@@ -120,19 +110,19 @@ export default function Dashboard() {
 
       {/* MAIN CONTENT */}
       <main className="min-w-0 flex-1 flex flex-col overflow-y-auto">
-        
+
         {/* TOP BAR */}
         <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-6 border-b border-slate-800 gap-4">
           <div>
             <h2 className="text-2xl font-semibold">Operations Overview</h2>
-            <p className="mt-1 text-sm text-slate-400">Portfolio demo. Metrics and charts are independent synthetic examples.</p>
+            <p className="mt-1 text-sm text-slate-400">Synthetic data · March–August 2026. Search updates all metrics. Revenue includes delivered orders only.</p>
           </div>
           <div className="flex items-center gap-4">
             <span className="px-3 py-1 text-xs font-medium bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/20 rounded-full">
               Demo · Synthetic data
             </span>
             <span className="text-sm text-slate-400 bg-slate-800/50 px-3 py-1.5 rounded-md border border-slate-700">
-              Last 30 Days
+              Status as of {AS_OF}
             </span>
           </div>
         </header>
@@ -141,19 +131,18 @@ export default function Dashboard() {
           {/* KPI CARDS */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { label: 'Revenue (30d)', value: '€142,300', change: '+12.5%', isUp: true },
-              { label: 'Orders (30d)', value: '842', change: '+5.2%', isUp: true },
-              { label: 'Gross Margin %', value: '32.4%', change: '-1.1%', isUp: false },
-              { label: 'Avg Fulfilment', value: '1.2 Days', change: '-8.0%', isUp: true },
+              { label: 'Delivered revenue', value: `€${metrics.revenue.toLocaleString('en-GB', { maximumFractionDigits: 2 })}` },
+              { label: 'Orders (all statuses)', value: filteredData.length.toLocaleString('en-GB') },
+              { label: 'Delivered gross margin', value: metrics.margin === null ? '—' : `${metrics.margin.toFixed(1)}%` },
+              { label: 'Avg fulfilment', value: metrics.fulfilment === null ? '—' : `${metrics.fulfilment.toFixed(1)} days` },
+              { label: 'On-time delivery', value: metrics.onTime === null ? '—' : `${metrics.onTime.toFixed(1)}%` },
+              { label: 'Open orders', value: String(metrics.open) },
             ].map((kpi, i) => (
               <div key={i} className="p-5 rounded-lg border border-slate-800 bg-[#0F1523] shadow-sm flex flex-col gap-2">
                 <span className="text-sm text-slate-400 font-medium">{kpi.label}</span>
                 <div className="flex items-end justify-between">
                   <span className="text-2xl font-semibold">{kpi.value}</span>
-                  <span className={`text-xs font-medium flex items-center ${kpi.isUp ? 'text-[#10B981]' : 'text-red-400'}`}>
-                    {kpi.isUp ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
-                    {kpi.change}
-                  </span>
+
                 </div>
               </div>
             ))}
@@ -162,7 +151,7 @@ export default function Dashboard() {
           {/* CHARTS */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="h-80 min-w-0 p-5 rounded-lg border border-slate-800 bg-[#0F1523] flex flex-col gap-4">
-              <h3 className="text-sm font-medium text-slate-300">Daily Revenue</h3>
+              <h3 className="text-sm font-medium text-slate-300">Delivered revenue by order month</h3>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" vertical={false} />
@@ -173,7 +162,7 @@ export default function Dashboard() {
                 </LineChart>
               </ResponsiveContainer>
             </div>
-            
+
             <div className="h-80 min-w-0 p-5 rounded-lg border border-slate-800 bg-[#0F1523] flex flex-col gap-4">
               <h3 className="text-sm font-medium text-slate-300">Orders by Category</h3>
               <ResponsiveContainer width="100%" height="100%">
@@ -193,8 +182,8 @@ export default function Dashboard() {
             <div className="p-4 border-b border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div className="relative w-full sm:w-72">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   placeholder="Search by ID or Customer..."
                   aria-label="Search orders by ID or customer"
                   value={searchTerm}
@@ -211,10 +200,10 @@ export default function Dashboard() {
               <table className="w-full text-sm text-left">
                 <thead className="bg-[#0B0F17]/50 text-slate-400 border-b border-slate-800">
                   <tr>
-                    {['id', 'date', 'customer', 'category', 'items', 'revenue', 'margin', 'status'].map((key) => (
+                    {(['id', 'date', 'customer', 'category', 'items', 'revenue', 'margin', 'status'] as const).map((key) => (
                       <th key={key} onClick={() => requestSort(key)} className="px-6 py-3 cursor-pointer hover:text-white transition-colors select-none">
                         <div className="flex items-center gap-1">
-                          {key.charAt(0).toUpperCase() + key.slice(1).replace('id', 'ID').replace('margin', 'Margin %')}
+                          {key === 'revenue' ? 'Order value (€)' : key === 'margin' ? 'Order margin %' : key === 'id' ? 'ID' : key.charAt(0).toUpperCase() + key.slice(1)}
                           {sortConfig?.key === key ? (
                             sortConfig.direction === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />
                           ) : <div className="w-3.5 h-3.5 opacity-0"></div>}
@@ -235,8 +224,8 @@ export default function Dashboard() {
                       <td className="px-6 py-4 text-slate-400">{row.margin}%</td>
                       <td className="px-6 py-4">
                         <span className={`px-2 py-1 text-xs rounded-full border ${
-                          row.status === 'Delivered' ? 'bg-[#10B981]/10 text-[#10B981] border-[#10B981]/20' : 
-                          row.status === 'In Transit' ? 'bg-[#06B6D4]/10 text-[#06B6D4] border-[#06B6D4]/20' : 
+                          row.status === 'Delivered' ? 'bg-[#10B981]/10 text-[#10B981] border-[#10B981]/20' :
+                          row.status === 'In Transit' ? 'bg-[#06B6D4]/10 text-[#06B6D4] border-[#06B6D4]/20' :
                           'bg-slate-800 text-slate-300 border-slate-700'
                         }`}>
                           {row.status}
